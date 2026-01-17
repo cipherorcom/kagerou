@@ -1,0 +1,29 @@
+node_modules
+dist
+.next
+.turbo
+*.log
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Prisma 自动生成的 .env（由根目录同步）
+packages/database/.env
+
+# Scripts 目录不需要 node_modules
+scripts/node_modules/
+
+*.tsbuildinfo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo

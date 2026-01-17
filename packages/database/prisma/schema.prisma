@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String?
+  quota         Int            @default(5)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  dnsAccounts   DNSAccount[]
+  domains       Domain[]
+  apiKeys       ApiKey[]
+  
+  @@map("users")
+}
+
+model DNSProvider {
+  id            String         @id @default(cuid())
+  name          String         @unique // cloudflare, aliyun, aws
+  displayName   String
+  isActive      Boolean        @default(true)
+  configSchema  Json           // 配置字段的 JSON Schema
+  createdAt     DateTime       @default(now())
+  
+  accounts      DNSAccount[]
+  
+  @@map("dns_providers")
+}
+
+model DNSAccount {
+  id            String         @id @default(cuid())
+  userId        String
+  providerId    String
+  credentials   String         // 加密存储的凭证
+  isDefault     Boolean        @default(false)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      DNSProvider    @relation(fields: [providerId], references: [id])
+  domains       Domain[]
+  
+  @@map("dns_accounts")
+}
+
+model Domain {
+  id                String       @id @default(cuid())
+  userId            String
+  dnsAccountId      String
+  subdomain         String
+  recordType        String       @default("A") // A, AAAA, CNAME, TXT
+  value             String
+  providerRecordId  String?      // DNS 服务商返回的记录 ID
+  status            String       @default("active") // active, pending, failed, deleted
+  ttl               Int          @default(300)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dnsAccount        DNSAccount   @relation(fields: [dnsAccountId], references: [id])
+  
+  @@unique([subdomain, dnsAccountId])
+  @@index([userId])
+  @@index([status])
+  @@map("domains")
+}
+
+model ApiKey {
+  id            String         @id @default(cuid())
+  userId        String
+  key           String         @unique
+  name          String
+  isActive      Boolean        @default(true)
+  lastUsedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+model ApiLog {
+  id            String         @id @default(cuid())
+  userId        String?
+  action        String
+  provider      String?
+  status        String
+  errorMessage  String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@map("api_logs")
+}
