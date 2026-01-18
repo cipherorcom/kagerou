@@ -104,10 +104,11 @@ docker-compose up -d
 # 复制环境变量模板
 cp .env.example .env
 
-# 编辑 .env 文件，修改以下配置：
+# 编辑 .env 文件，配置以下必要项：
+# - DATABASE_URL: PostgreSQL 数据库连接字符串
 # - JWT_SECRET: 修改为随机字符串（生产环境必须修改）
 # - ENCRYPTION_KEY: 必须是 32 字符（生产环境必须修改）
-# - REDIS_PASSWORD: Redis 密码（生产环境必须修改）
+# - REDIS_URL: Redis 连接字符串
 ```
 
 ### 4. 初始化数据库
@@ -116,10 +117,17 @@ cp .env.example .env
 # 一键初始化（推荐）
 npm run db:setup
 
-# 或者分步执行：
-npm run db:generate  # 生成 Prisma Client（自动同步环境变量和安装依赖）
+# 这个命令会自动执行：
+# - 生成 Prisma Client
+# - 运行数据库迁移（包含表结构和默认 DNS Provider 数据）
+```
+
+**就这么简单！** `npm run db:setup` 会自动完成所有数据库初始化工作，包括创建表结构和插入默认的 DNS Provider（Cloudflare 和阿里云）。
+
+如果需要分步执行或遇到问题，也可以手动执行：
+```bash
+npm run db:generate  # 生成 Prisma Client
 npm run db:migrate   # 运行数据库迁移
-npm run db:seed      # 初始化 DNS Provider 数据
 ```
 
 ### 5. 启动开发服务器
@@ -130,6 +138,51 @@ npm run dev
 
 - 后端 API: `http://localhost:3001`
 - 前端界面: `http://localhost:3000`
+
+### 6. 创建管理员账号
+
+访问 `http://localhost:3000/create-admin` 创建第一个管理员账号。
+
+## 📊 数据库架构
+
+系统使用 PostgreSQL 数据库，采用分层权限管理：
+
+### 核心表结构
+- **users** - 用户表（支持普通用户和管理员角色）
+- **dns_providers** - DNS 服务商表（Cloudflare、阿里云等）
+- **dns_accounts** - DNS 账号表（管理员创建的 DNS 服务商账号）
+- **available_domains** - 可用域名表（管理员从 DNS 账号中添加的可用根域名）
+- **domains** - 域名记录表（用户创建的子域名记录）
+- **api_keys** - API 密钥表
+- **api_logs** - API 日志表
+
+### 权限模型
+
+**管理员权限**：
+- 管理 DNS Provider（查看、启用/禁用）
+- 管理 DNS 账号（创建、编辑、删除）
+- 管理可用域名（从 DNS 账号中添加域名供用户使用）
+- 管理用户（查看、修改配额、启用/禁用、提升/降级权限）
+- 查看所有域名记录和系统日志
+
+**普通用户权限**：
+- 查看可用域名列表
+- 在可用域名下创建子域名记录
+- 管理自己的域名记录（查看、编辑、删除）
+- 管理自己的 API 密钥
+
+### 工作流程
+
+1. **管理员设置**：
+   - 创建 DNS 账号（输入 Cloudflare API Token/Global API Key 或阿里云凭证）
+   - 从 DNS 账号中选择域名添加为可用域名
+
+2. **用户使用**：
+   - 注册账号后查看可用域名
+   - 选择可用域名创建子域名记录
+   - 管理自己的域名记录
+
+详细的数据库初始化指南请查看 [DATABASE_SETUP.md](./DATABASE_SETUP.md)。
 
 ## 🎨 界面预览
 

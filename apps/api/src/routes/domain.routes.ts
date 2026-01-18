@@ -1,35 +1,46 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { DNSService } from '../services/dns.service';
+import { requireAuth } from '../middleware/admin.middleware';
 
 const createDomainSchema = z.object({
-  dnsAccountId: z.string(),
+  availableDomainId: z.string(),
   subdomain: z.string(),
-  recordType: z.enum(['A', 'AAAA', 'CNAME', 'TXT', 'MX']),
+  recordType: z.enum(['A', 'AAAA', 'CNAME']),
   value: z.string(),
   ttl: z.number().optional(),
+  proxied: z.boolean().optional(),
 });
 
 const updateDomainSchema = z.object({
-  value: z.string(),
-  ttl: z.number().optional(),
+  value: z.string().optional(),
+  proxied: z.boolean().optional(),
 });
 
 export async function domainRoutes(app: FastifyInstance) {
   const dnsService = new DNSService();
 
+  // 获取可用域名列表
+  app.get('/available-domains', {
+    onRequest: [requireAuth],
+  }, async () => {
+    const domains = await dnsService.getAvailableDomains();
+    return { domains };
+  });
+
   app.post('/domains', {
-    onRequest: [app.authenticate],
+    onRequest: [requireAuth],
   }, async (request, reply) => {
     try {
       const body = createDomainSchema.parse(request.body);
       const domain = await dnsService.createDomain(
-        request.user.userId,
-        body.dnsAccountId,
+        (request as any).user.id,
+        body.availableDomainId,
         body.subdomain,
         body.recordType,
         body.value,
-        body.ttl
+        body.ttl,
+        body.proxied
       );
       return { domain };
     } catch (error: any) {
@@ -38,19 +49,19 @@ export async function domainRoutes(app: FastifyInstance) {
   });
 
   app.get('/domains', {
-    onRequest: [app.authenticate],
+    onRequest: [requireAuth],
   }, async (request) => {
-    const domains = await dnsService.listDomains(request.user.userId);
+    const domains = await dnsService.listDomains((request as any).user.id);
     return { domains };
   });
 
   app.patch('/domains/:id', {
-    onRequest: [app.authenticate],
+    onRequest: [requireAuth],
   }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
       const body = updateDomainSchema.parse(request.body);
-      const domain = await dnsService.updateDomain(request.user.userId, id, body.value, body.ttl);
+      const domain = await dnsService.updateDomain((request as any).user.id, id, body);
       return { domain };
     } catch (error: any) {
       reply.code(400).send({ error: error.message });
@@ -58,11 +69,11 @@ export async function domainRoutes(app: FastifyInstance) {
   });
 
   app.delete('/domains/:id', {
-    onRequest: [app.authenticate],
+    onRequest: [requireAuth],
   }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      await dnsService.deleteDomain(request.user.userId, id);
+      await dnsService.deleteDomain((request as any).user.id, id);
       return { success: true };
     } catch (error: any) {
       reply.code(400).send({ error: error.message });

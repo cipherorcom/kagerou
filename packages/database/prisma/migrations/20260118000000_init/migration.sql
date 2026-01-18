@@ -4,6 +4,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "name" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'user',
     "quota" INTEGER NOT NULL DEFAULT 5,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,8 +28,8 @@ CREATE TABLE "dns_providers" (
 -- CreateTable
 CREATE TABLE "dns_accounts" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "credentials" TEXT NOT NULL,
     "isDefault" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
@@ -39,10 +40,23 @@ CREATE TABLE "dns_accounts" (
 );
 
 -- CreateTable
+CREATE TABLE "available_domains" (
+    "id" TEXT NOT NULL,
+    "dnsAccountId" TEXT NOT NULL,
+    "domain" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "available_domains_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "domains" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "dnsAccountId" TEXT NOT NULL,
+    "availableDomainId" TEXT NOT NULL,
     "subdomain" TEXT NOT NULL,
     "recordType" TEXT NOT NULL DEFAULT 'A',
     "value" TEXT NOT NULL,
@@ -89,13 +103,16 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 CREATE UNIQUE INDEX "dns_providers_name_key" ON "dns_providers"("name");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "available_domains_dnsAccountId_domain_key" ON "available_domains"("dnsAccountId", "domain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "domains_subdomain_availableDomainId_key" ON "domains"("subdomain", "availableDomainId");
+
+-- CreateIndex
 CREATE INDEX "domains_userId_idx" ON "domains"("userId");
 
 -- CreateIndex
 CREATE INDEX "domains_status_idx" ON "domains"("status");
-
--- CreateIndex
-CREATE UNIQUE INDEX "domains_subdomain_dnsAccountId_key" ON "domains"("subdomain", "dnsAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "api_keys_key_key" ON "api_keys"("key");
@@ -107,10 +124,10 @@ CREATE INDEX "api_logs_userId_idx" ON "api_logs"("userId");
 CREATE INDEX "api_logs_createdAt_idx" ON "api_logs"("createdAt");
 
 -- AddForeignKey
-ALTER TABLE "dns_accounts" ADD CONSTRAINT "dns_accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "dns_accounts" ADD CONSTRAINT "dns_accounts_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "dns_providers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "dns_accounts" ADD CONSTRAINT "dns_accounts_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "dns_providers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "available_domains" ADD CONSTRAINT "available_domains_dnsAccountId_fkey" FOREIGN KEY ("dnsAccountId") REFERENCES "dns_accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "domains" ADD CONSTRAINT "domains_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -119,4 +136,13 @@ ALTER TABLE "domains" ADD CONSTRAINT "domains_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "domains" ADD CONSTRAINT "domains_dnsAccountId_fkey" FOREIGN KEY ("dnsAccountId") REFERENCES "dns_accounts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "domains" ADD CONSTRAINT "domains_availableDomainId_fkey" FOREIGN KEY ("availableDomainId") REFERENCES "available_domains"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "api_keys" ADD CONSTRAINT "api_keys_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Insert default DNS providers
+INSERT INTO "dns_providers" ("id", "name", "displayName", "isActive", "configSchema", "createdAt") VALUES
+('clrh1x2y40000qr8v4k5j6l7m', 'cloudflare', 'Cloudflare', true, '{"type":"object","required":["apiToken"],"properties":{"apiToken":{"type":"string","description":"Cloudflare API Token"}}}', CURRENT_TIMESTAMP),
+('clrh1x2y40001qr8v9n3p2q4r', 'aliyun', '阿里云 DNS', true, '{"type":"object","required":["accessKeyId","accessKeySecret"],"properties":{"accessKeyId":{"type":"string","description":"Access Key ID"},"accessKeySecret":{"type":"string","description":"Access Key Secret"}}}', CURRENT_TIMESTAMP)
+ON CONFLICT (name) DO NOTHING;

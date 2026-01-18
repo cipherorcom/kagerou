@@ -10,37 +10,34 @@ import { useAuthStore } from '@/store/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
 
-const registerSchema = z.object({
+const createAdminSchema = z.object({
   email: z.string().email('请输入有效的邮箱'),
   password: z.string().min(6, '密码至少 6 位'),
   name: z.string().optional(),
 })
 
-type RegisterForm = z.infer<typeof registerSchema>
+type CreateAdminForm = z.infer<typeof createAdminSchema>
 
-export default function RegisterPage() {
+export default function CreateAdminPage() {
   const router = useRouter()
   const setAuth = useAuthStore((state) => state.setAuth)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema),
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateAdminForm>({
+    resolver: zodResolver(createAdminSchema),
   })
 
-  const onSubmit = async (data: RegisterForm) => {
+  const onSubmit = async (data: CreateAdminForm) => {
     setLoading(true)
     setError('')
     
     try {
-      const response = await authApi.register(data)
-      const { user, token } = response.data
-      setAuth(user, token)
-      
-      // 普通用户注册后默认进入用户仪表板
-      router.push('/dashboard')
+      const response = await authApi.createAdmin(data)
+      setAuth(response.data.user, response.data.token)
+      router.push('/admin')
     } catch (err: any) {
-      setError(err.response?.data?.error || '注册失败')
+      setError(err.response?.data?.error || '创建管理员失败')
     } finally {
       setLoading(false)
     }
@@ -60,9 +57,12 @@ export default function RegisterPage() {
             </Link>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            注册新账号
+            创建管理员账号
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            系统初始化 - 创建第一个管理员账号
+          </p>
+          <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
             已有账号？{' '}
             <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
               立即登录
@@ -85,26 +85,29 @@ export default function RegisterPage() {
               <input
                 {...register('email')}
                 type="email"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="your@email.com"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="admin@example.com"
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
               )}
             </div>
-
+            
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                姓名（可选）
+                姓名 (可选)
               </label>
               <input
                 {...register('name')}
                 type="text"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="张三"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="管理员"
               />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
+              )}
             </div>
-
+            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 密码
@@ -112,8 +115,8 @@ export default function RegisterPage() {
               <input
                 {...register('password')}
                 type="password"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="至少 6 位"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="至少 6 位密码"
               />
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
@@ -125,10 +128,16 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
             >
-              {loading ? '注册中...' : '注册'}
+              {loading ? '创建中...' : '创建管理员账号'}
             </button>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              注意：此功能仅在系统没有管理员时可用
+            </p>
           </div>
         </form>
       </div>

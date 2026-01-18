@@ -37,17 +37,17 @@ export class AliyunProvider implements DNSProvider {
       type: record.type,
       value: record.value,
       TTL: record.ttl || 600,
-      priority: record.priority,
     });
 
     const result = await this.client.addDomainRecord(request);
     
     return {
-      id: result.body.recordId,
+      id: result.body?.recordId || '',
       name: record.name,
       type: record.type,
       value: record.value,
       ttl: record.ttl,
+      proxied: false, // Aliyun 不支持代理功能
     };
   }
 
@@ -60,7 +60,6 @@ export class AliyunProvider implements DNSProvider {
       type: record.type,
       value: record.value,
       TTL: record.ttl,
-      priority: record.priority,
     });
 
     await this.client.updateDomainRecord(request);
@@ -71,6 +70,7 @@ export class AliyunProvider implements DNSProvider {
       type: record.type!,
       value: record.value!,
       ttl: record.ttl,
+      proxied: false, // Aliyun 不支持代理功能
     };
   }
 
@@ -89,12 +89,17 @@ export class AliyunProvider implements DNSProvider {
     const result = await this.client.describeDomainRecordInfo(request);
     const r = result.body;
     
+    if (!r) {
+      throw new Error('Record not found');
+    }
+    
     return {
-      id: r.recordId,
-      name: `${r.RR}.${r.domainName}`,
-      type: r.type as any,
-      value: r.value!,
+      id: r.recordId || '',
+      name: `${r.RR || ''}.${r.domainName || ''}`,
+      type: (r.type as any) || 'A',
+      value: r.value || '',
       ttl: r.TTL,
+      proxied: false, // Aliyun 不支持代理功能
     };
   }
 
@@ -106,13 +111,38 @@ export class AliyunProvider implements DNSProvider {
     
     const result = await this.client.describeDomainRecords(request);
     
-    return (result.body.domainRecords?.record || []).map(r => ({
-      id: r.recordId,
-      name: `${r.RR}.${r.domainName}`,
-      type: r.type as any,
-      value: r.value!,
-      ttl: r.TTL,
+    if (!result.body?.domainRecords?.record) {
+      return [];
+    }
+    
+    return result.body.domainRecords.record.map(r => ({
+      id: r?.recordId || '',
+      name: `${r?.RR || ''}.${r?.domainName || ''}`,
+      type: (r?.type as any) || 'A',
+      value: r?.value || '',
+      ttl: r?.TTL,
+      proxied: false, // Aliyun 不支持代理功能
     }));
+  }
+
+  async listDomains(): Promise<string[]> {
+    try {
+      const request = new $Alidns20150109.DescribeDomainsRequest({
+        pageNumber: 1,
+        pageSize: 100, // 获取前100个域名
+      });
+      
+      const result = await this.client.describeDomains(request);
+      
+      if (!result.body?.domains?.domain) {
+        return [];
+      }
+      
+      return result.body.domains.domain.map(d => d?.domainName || '').filter(name => name);
+    } catch (error) {
+      console.error('Failed to list domains from Aliyun:', error);
+      return [];
+    }
   }
 
   async validateCredentials(): Promise<boolean> {

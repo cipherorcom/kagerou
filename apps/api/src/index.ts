@@ -1,12 +1,10 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { config } from './config';
-import { authPlugin } from './plugins/auth.plugin';
-import { rateLimitPlugin } from './plugins/rate-limit.plugin';
 import { authRoutes } from './routes/auth.routes';
 import { domainRoutes } from './routes/domain.routes';
-import { dnsAccountRoutes } from './routes/dns-account.routes';
 import { providerRoutes } from './routes/provider.routes';
+import { adminRoutes } from './routes/admin.routes';
 import { redis } from './utils/redis';
 
 const app = Fastify({
@@ -20,15 +18,11 @@ async function start() {
       origin: true,
     });
 
-    // 插件
-    await app.register(authPlugin);
-    await app.register(rateLimitPlugin);
-
     // 路由
-    app.register(authRoutes, { prefix: '/api/auth' });
-    app.register(domainRoutes, { prefix: '/api' });
-    app.register(dnsAccountRoutes, { prefix: '/api' });
-    app.register(providerRoutes, { prefix: '/api' });
+    await app.register(authRoutes, { prefix: '/api/auth' });
+    await app.register(domainRoutes, { prefix: '/api' });
+    await app.register(providerRoutes, { prefix: '/api' });
+    await app.register(adminRoutes, { prefix: '/api' });
 
     // 健康检查
     app.get('/health', async () => {

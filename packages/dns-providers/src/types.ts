@@ -1,10 +1,10 @@
 export interface DNSRecord {
   id?: string;
   name: string;
-  type: 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX';
+  type: 'A' | 'AAAA' | 'CNAME';
   value: string;
   ttl?: number;
-  priority?: number;
+  proxied?: boolean; // 是否启用代理（仅 Cloudflare 支持）
 }
 
 export interface DNSProviderCredentials {
@@ -26,6 +26,9 @@ export interface DNSProvider {
   deleteRecord(domain: string, recordId: string): Promise<void>;
   getRecord(domain: string, recordId: string): Promise<DNSRecord>;
   listRecords(domain: string, type?: string): Promise<DNSRecord[]>;
+  
+  // 域名管理
+  listDomains?(): Promise<string[]>;
   
   // 验证与健康检查
   validateCredentials(): Promise<boolean>;

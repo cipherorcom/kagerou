@@ -2,6 +2,7 @@
   "name": "kagerou",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -12,9 +13,11 @@
     "db:env": "node scripts/sync-env.js",
     "db:generate": "npm run db:env && cd packages/database && npm install && prisma generate",
     "db:migrate": "npm run db:env && cd packages/database && prisma migrate dev",
+    "db:migrate:deploy": "npm run db:env && cd packages/database && prisma migrate deploy",
     "db:studio": "cd packages/database && prisma studio",
     "db:seed": "npm run db:generate && node scripts/seed-providers.js",
-    "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed"
+    "db:setup": "npm run db:generate && npm run db:migrate",
+    "db:reset": "cd packages/database && prisma migrate reset"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
