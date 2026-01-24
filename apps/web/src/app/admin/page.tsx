@@ -264,6 +264,45 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">禁用子域名</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">管理不允许用户创建的子域名</p>
+              <button
+                onClick={() => router.push('/admin/blocked-subdomains')}
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                管理禁用子域名
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">系统设置</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">配置系统行为和默认选项</p>
+              <button
+                onClick={() => router.push('/admin/settings')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                系统设置
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">邀请码管理</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">创建和管理用户注册邀请码</p>
+              <button
+                onClick={() => router.push('/admin/invite-codes')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                管理邀请码
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

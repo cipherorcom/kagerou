@@ -5,7 +5,6 @@ import { authRoutes } from './routes/auth.routes';
 import { domainRoutes } from './routes/domain.routes';
 import { providerRoutes } from './routes/provider.routes';
 import { adminRoutes } from './routes/admin.routes';
-import { redis } from './utils/redis';
 
 const app = Fastify({
   logger: true,
@@ -26,10 +25,8 @@ async function start() {
 
     // 健康检查
     app.get('/health', async () => {
-      const redisStatus = redis.status === 'ready' ? 'ok' : 'error';
       return { 
         status: 'ok',
-        redis: redisStatus,
         timestamp: new Date().toISOString(),
       };
     });
@@ -45,7 +42,6 @@ async function start() {
 // 优雅关闭
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing server...');
-  await redis.quit();
   await app.close();
   process.exit(0);
 });

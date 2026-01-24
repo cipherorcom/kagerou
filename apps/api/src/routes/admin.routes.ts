@@ -111,6 +111,109 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
+  // 创建用户
+  app.post('/admin/users', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'password'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 6 },
+          name: { type: 'string' },
+          role: { type: 'string', enum: ['user', 'admin'] },
+          quota: { type: 'number', minimum: 0, maximum: 1000 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { email, password, name, role, quota } = request.body as {
+        email: string;
+        password: string;
+        name?: string;
+        role?: 'user' | 'admin';
+        quota?: number;
+      };
+      
+      const user = await adminService.createUser(email, password, name, role, quota);
+      return { user };
+    } catch (error: any) {
+      reply.code(400).send({ error: error.message });
+    }
+  });
+
+  // 更新用户信息
+  app.put('/admin/users/:id', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email' },
+          name: { type: 'string' },
+          role: { type: 'string', enum: ['user', 'admin'] },
+          quota: { type: 'number', minimum: 0, maximum: 1000 },
+          isActive: { type: 'boolean' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const updateData = request.body as {
+        email?: string;
+        name?: string;
+        role?: 'user' | 'admin';
+        quota?: number;
+        isActive?: boolean;
+      };
+      
+      const user = await adminService.updateUser(id, updateData);
+      return { user };
+    } catch (error: any) {
+      reply.code(400).send({ error: error.message });
+    }
+  });
+
+  // 删除用户
+  app.delete('/admin/users/:id', {
+    onRequest: [requireAdmin],
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const result = await adminService.deleteUser(id);
+      return result;
+    } catch (error: any) {
+      reply.code(400).send({ error: error.message });
+    }
+  });
+
+  // 重置用户密码
+  app.patch('/admin/users/:id/reset-password', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['password'],
+        properties: {
+          password: { type: 'string', minLength: 6 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const { password } = request.body as { password: string };
+      
+      const user = await adminService.resetUserPassword(id, password);
+      return { user };
+    } catch (error: any) {
+      reply.code(400).send({ error: error.message });
+    }
+  });
+
   // DNS Provider 管理
   app.get('/admin/providers', {
     onRequest: [requireAdmin],
@@ -280,5 +383,198 @@ export async function adminRoutes(app: FastifyInstance) {
     const { page = 1, limit = 50, userId } = request.query as any;
     const result = await adminService.getApiLogs(Number(page), Number(limit), userId);
     return result;
+  });
+
+  // 禁用子域名管理
+  app.get('/admin/blocked-subdomains', {
+    onRequest: [requireAdmin],
+  }, async () => {
+    const blockedSubdomains = await adminService.getBlockedSubdomains();
+    return { blockedSubdomains };
+  });
+
+  app.post('/admin/blocked-subdomains', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['subdomain'],
+        properties: {
+          subdomain: { type: 'string' },
+          reason: { type: 'string' }
+        }
+      }
+    }
+  }, async (request) => {
+    const { subdomain, reason } = request.body as any;
+    const blockedSubdomain = await adminService.createBlockedSubdomain(subdomain, reason);
+    return { blockedSubdomain };
+  });
+
+  app.put('/admin/blocked-subdomains/:id', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          reason: { type: 'string' }
+        }
+      }
+    }
+  }, async (request) => {
+    const { id } = request.params as any;
+    const { reason } = request.body as any;
+    const blockedSubdomain = await adminService.updateBlockedSubdomain(id, { reason });
+    return { blockedSubdomain };
+  });
+
+  app.delete('/admin/blocked-subdomains/:id', {
+    onRequest: [requireAdmin],
+  }, async (request) => {
+    const { id } = request.params as any;
+    await adminService.deleteBlockedSubdomain(id);
+    return { success: true };
+  });
+
+  // 管理员域名管理
+  app.patch('/admin/domains/:id/status', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: { type: 'string', enum: ['active', 'pending', 'rejected'] }
+        }
+      }
+    }
+  }, async (request) => {
+    const { id } = request.params as any;
+    const { status } = request.body as any;
+    const domain = await adminService.updateDomainStatus(id, status);
+    return { domain };
+  });
+
+  app.patch('/admin/domains/:id/value', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['value'],
+        properties: {
+          value: { type: 'string' }
+        }
+      }
+    }
+  }, async (request) => {
+    const { id } = request.params as any;
+    const { value } = request.body as any;
+    const domain = await adminService.updateDomainValue(id, value);
+    return { domain };
+  });
+
+  app.delete('/admin/domains/:id', {
+    onRequest: [requireAdmin],
+  }, async (request) => {
+    const { id } = request.params as any;
+    await adminService.deleteDomainAsAdmin(id);
+    return { success: true };
+  });
+
+  // 系统设置管理
+  app.get('/admin/settings', {
+    onRequest: [requireAdmin],
+  }, async () => {
+    const settings = await adminService.getSystemSettings();
+    return { settings };
+  });
+
+  app.put('/admin/settings/:key', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['value'],
+        properties: {
+          value: { type: 'string' }
+        }
+      }
+    }
+  }, async (request) => {
+    const { key } = request.params as any;
+    const { value } = request.body as any;
+    const setting = await adminService.updateSystemSetting(key, value);
+    return { setting };
+  });
+
+  // 邀请码管理
+  app.get('/admin/invite-codes', {
+    onRequest: [requireAdmin]
+  }, async () => {
+    const inviteCodes = await adminService.getInviteCodes();
+    return { inviteCodes };
+  });
+
+  app.post('/admin/invite-codes', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['maxUses', 'isActive'],
+        properties: {
+          code: { type: 'string' },
+          description: { type: 'string' },
+          maxUses: { type: 'number', minimum: 1 },
+          expiresAt: { type: 'string' },
+          isActive: { type: 'boolean' }
+        }
+      }
+    }
+  }, async (request) => {
+    const user = (request as any).user;
+    const data = request.body as {
+      code?: string;
+      description?: string;
+      maxUses: number;
+      expiresAt?: string;
+      isActive: boolean;
+    };
+    
+    const inviteCode = await adminService.createInviteCode(user.id, data);
+    return { inviteCode };
+  });
+
+  app.put('/admin/invite-codes/:id', {
+    onRequest: [requireAdmin],
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          description: { type: 'string' },
+          maxUses: { type: 'number', minimum: 1 },
+          expiresAt: { type: 'string' },
+          isActive: { type: 'boolean' }
+        }
+      }
+    }
+  }, async (request) => {
+    const { id } = request.params as { id: string };
+    const data = request.body as {
+      description?: string;
+      maxUses?: number;
+      expiresAt?: string;
+      isActive?: boolean;
+    };
+    
+    const inviteCode = await adminService.updateInviteCode(id, data);
+    return { inviteCode };
+  });
+
+  app.delete('/admin/invite-codes/:id', {
+    onRequest: [requireAdmin]
+  }, async (request) => {
+    const { id } = request.params as { id: string };
+    await adminService.deleteInviteCode(id);
+    return { success: true };
   });
 }

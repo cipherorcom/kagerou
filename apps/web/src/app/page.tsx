@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Logo } from '@/components/logo'
+import { Footer } from '@/components/footer'
 import Link from 'next/link'
 
 export default function Home() {
@@ -48,10 +50,7 @@ export default function Home() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kagerou</h1>
-              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">DNS 管理系统</span>
-            </div>
+            <Logo size="md" />
             <div className="flex items-center space-x-4">
               <ThemeToggle />
               <Link
@@ -206,10 +205,10 @@ export default function Home() {
                 免费注册
               </Link>
               <Link
-                href="/create-admin"
+                href="/login"
                 className="bg-blue-700 dark:bg-blue-800 hover:bg-blue-800 dark:hover:bg-blue-900 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors"
               >
-                创建管理员
+                立即登录
               </Link>
             </div>
           </div>
@@ -217,15 +216,7 @@ export default function Home() {
       </main>
 
       {/* 页脚 */}
-      <footer className="bg-gray-900 dark:bg-gray-950 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-gray-400">
-              © 2024 Kagerou DNS 管理系统. 保留所有权利.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

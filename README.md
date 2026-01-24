@@ -1,151 +1,119 @@
 # Kagerou - 二级域名分发系统
 
-基于 Node.js + TypeScript 全栈的多 DNS Provider 域名管理系统，支持 Cloudflare、阿里云等多个 DNS 服务商。
+基于 Docker 的现代化域名管理系统，支持 Cloudflare、阿里云等多个 DNS 服务商，提供简洁的 Web 管理界面。
 
 ## ✨ 功能特性
 
-### 核心功能
-- 🔐 用户认证与授权（JWT）
-- 🌐 多 DNS Provider 支持（Cloudflare、阿里云）
-- 📊 用户配额管理
-- 🔒 凭证 AES-256-GCM 加密存储
-- 🎨 现代化 Web 管理界面
-- 🚀 RESTful API
-- 📦 Monorepo 架构（Turborepo）
+### 🔐 用户系统
+- **用户认证**: 注册/登录系统，支持邀请码
+- **权限管理**: 普通用户和管理员角色
+- **个人资料**: 用户可自助修改个人信息和密码
+- **配额管理**: 灵活的域名配额控制
 
-### 前端功能
-- ✅ 用户注册/登录
-- ✅ 域名记录管理（创建、删除）
-- ✅ DNS 账号管理（支持多个服务商）
-- ✅ 实时状态更新
-- ✅ 响应式设计
+### 🌐 DNS 管理
+- **多 Provider 支持**: Cloudflare、阿里云 DNS
+- **DNS 账号管理**: 管理员可添加多个 DNS 服务商账号
+- **可用域名**: 管理员从 DNS 账号中选择域名供用户使用
+- **凭证加密**: AES-256-GCM 加密存储 DNS 凭证
 
-## 🛠 技术栈
+### 📊 域名记录管理
+- **完整 CRUD**: 创建、查看、编辑、删除域名记录
+- **多记录类型**: 支持 A、AAAA、CNAME 记录
+- **实时同步**: 直接操作 DNS 服务商 API
+- **状态管理**: 域名记录状态跟踪
 
-### 后端
-- **框架**: Fastify + TypeScript
-- **数据库**: PostgreSQL + Prisma ORM
-- **缓存**: Redis
-- **DNS Providers**: Cloudflare SDK, 阿里云 DNS SDK
-- **认证**: JWT + bcrypt
+### �️ 安全与限制
+- **子域名黑名单**: 禁止创建系统保留域名（admin、api、www 等）
+- **API 限流**: 可配置的登录和注册限流
+- **数据加密**: 敏感数据 AES 加密存储
+- **JWT 认证**: 安全的用户会话管理
 
-### 前端
-- **框架**: Next.js 14 (App Router)
-- **UI**: Tailwind CSS
-- **状态管理**: Zustand
-- **数据获取**: TanStack Query (React Query)
-- **表单**: React Hook Form + Zod
-- **HTTP 客户端**: Axios
+### 🎨 管理功能
+- **用户管理**: 管理员可管理用户账号、配额、权限
+- **邀请码系统**: 支持邀请码注册控制
+- **系统设置**: 灵活的系统参数配置
+- **操作日志**: 完整的 API 操作日志记录
 
-## 📁 项目结构
+## 🚀 快速开始
 
-```
-kagerou/
-├── apps/
-│   ├── api/                    # Fastify 后端 API
-│   │   ├── src/
-│   │   │   ├── routes/        # API 路由（auth, domain, dns-account, provider）
-│   │   │   ├── services/      # 业务逻辑层
-│   │   │   ├── plugins/       # Fastify 插件（JWT 认证）
-│   │   │   ├── utils/         # 工具函数（加密/解密）
-│   │   │   ├── config.ts      # 配置管理
-│   │   │   └── index.ts       # 应用入口
-│   │   └── package.json
-│   └── web/                    # Next.js 前端应用
-│       ├── src/
-│       │   ├── app/           # Next.js App Router 页面
-│       │   │   ├── login/     # 登录页
-│       │   │   ├── register/  # 注册页
-│       │   │   └── dashboard/ # 管理后台
-│       │   ├── lib/           # API 客户端
-│       │   ├── store/         # Zustand 状态管理
-│       │   └── components/    # React 组件
-│       └── package.json
-├── packages/
-│   ├── database/              # Prisma ORM
-│   │   ├── prisma/
-│   │   │   └── schema.prisma  # 数据库模型定义
-│   │   └── src/
-│   │       └── index.ts       # Prisma Client 导出
-│   └── dns-providers/         # DNS Provider 抽象层
-│       └── src/
-│           ├── providers/     # 各服务商实现
-│           │   ├── cloudflare.ts
-│           │   └── aliyun.ts
-│           ├── types.ts       # TypeScript 类型定义
-│           ├── factory.ts     # Provider 工厂
-│           └── index.ts
-├── scripts/
-│   └── seed-providers.ts      # 数据库初始化脚本
-├── docker-compose.yml         # PostgreSQL + Redis
-├── turbo.json                 # Turborepo 配置
-└── package.json               # 根 package.json
-```
+Kagerou 提供预构建的 Docker 镜像，部署极其简单：
 
-## 快速开始
-
-### 1. 安装依赖
+### 1. 下载配置文件
 
 ```bash
-npm install
-# 或
-pnpm install
+# 下载 docker-compose.yml
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
+
+# 下载环境变量模板
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
 ```
 
-### 2. 启动数据库
+### 2. 配置环境变量
 
 ```bash
+cp .env.docker .env
+# 编辑 .env 文件，修改密钥和密码（重要！）
+```
+
+**重要配置项：**
+```env
+# 数据库密码（必须修改）
+POSTGRES_PASSWORD=your-strong-password
+
+# JWT 密钥（必须修改，至少32字符）
+JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters
+
+# 加密密钥（必须修改，恰好32字符）
+ENCRYPTION_KEY=your-exactly-32-character-key!!
+
+# API 地址（如果使用域名部署需要修改）
+NEXT_PUBLIC_API_URL=http://localhost/api
+```
+
+### 3. 启动服务
+
+```bash
+# 拉取最新镜像并启动
+docker-compose pull
 docker-compose up -d
 ```
 
-### 3. 配置环境变量
+### 4. 访问应用
 
-```bash
-# 复制环境变量模板
-cp .env.example .env
+- 🌐 **网站**: http://localhost
+- 💚 **健康检查**: http://localhost/health
 
-# 编辑 .env 文件，配置以下必要项：
-# - DATABASE_URL: PostgreSQL 数据库连接字符串
-# - JWT_SECRET: 修改为随机字符串（生产环境必须修改）
-# - ENCRYPTION_KEY: 必须是 32 字符（生产环境必须修改）
-# - REDIS_URL: Redis 连接字符串
+### 5. 创建管理员账号
+
+访问 `http://localhost/create-admin` 创建第一个管理员账号。
+
+**注意**: 
+- 使用的是预构建镜像 `ghcr.io/your-username/kagerou:latest`
+- 首次启动会自动处理数据库初始化
+- 生产环境请务必修改 `.env` 中的默认密钥
+
+## 📁 系统架构
+
+### 技术栈
+- **后端**: Fastify + TypeScript
+- **前端**: Next.js 14 + Tailwind CSS
+- **数据库**: PostgreSQL + Prisma ORM
+- **DNS SDK**: Cloudflare SDK、阿里云 DNS SDK
+- **部署**: Docker 单镜像架构
+
+### 单镜像架构
+```
+Internet → Nginx (Port 80) → API (Port 3001)
+                           → Web (Port 3000)
 ```
 
-### 4. 初始化数据库
-
-```bash
-# 一键初始化（推荐）
-npm run db:setup
-
-# 这个命令会自动执行：
-# - 生成 Prisma Client
-# - 运行数据库迁移（包含表结构和默认 DNS Provider 数据）
-```
-
-**就这么简单！** `npm run db:setup` 会自动完成所有数据库初始化工作，包括创建表结构和插入默认的 DNS Provider（Cloudflare 和阿里云）。
-
-如果需要分步执行或遇到问题，也可以手动执行：
-```bash
-npm run db:generate  # 生成 Prisma Client
-npm run db:migrate   # 运行数据库迁移
-```
-
-### 5. 启动开发服务器
-
-```bash
-npm run dev
-```
-
-- 后端 API: `http://localhost:3001`
-- 前端界面: `http://localhost:3000`
-
-### 6. 创建管理员账号
-
-访问 `http://localhost:3000/create-admin` 创建第一个管理员账号。
+**优势：**
+- 🎯 简化部署，只需管理一个应用容器
+- 🚀 内置 Nginx 反向代理和负载均衡
+- 📦 更小的资源占用和更好的性能
+- 🔧 统一的日志和监控
 
 ## 📊 数据库架构
-
-系统使用 PostgreSQL 数据库，采用分层权限管理：
 
 ### 核心表结构
 - **users** - 用户表（支持普通用户和管理员角色）
@@ -153,287 +121,136 @@ npm run dev
 - **dns_accounts** - DNS 账号表（管理员创建的 DNS 服务商账号）
 - **available_domains** - 可用域名表（管理员从 DNS 账号中添加的可用根域名）
 - **domains** - 域名记录表（用户创建的子域名记录）
-- **api_keys** - API 密钥表
+- **blocked_subdomains** - 禁用子域名表（管理员禁用的子域名）
+- **system_settings** - 系统设置表
+- **invite_codes** - 邀请码表
+- **api_keys** - API 密钥表（预留功能）
 - **api_logs** - API 日志表
 
 ### 权限模型
 
-**管理员权限**：
+**管理员权限：**
 - 管理 DNS Provider（查看、启用/禁用）
 - 管理 DNS 账号（创建、编辑、删除）
 - 管理可用域名（从 DNS 账号中添加域名供用户使用）
+- 管理禁用子域名（设置不允许用户创建的子域名）
 - 管理用户（查看、修改配额、启用/禁用、提升/降级权限）
+- 管理邀请码（创建、编辑、删除）
+- 系统设置（配额、限流、注册控制等）
 - 查看所有域名记录和系统日志
 
-**普通用户权限**：
+**普通用户权限：**
 - 查看可用域名列表
-- 在可用域名下创建子域名记录
+- 在可用域名下创建子域名记录（受禁用子域名限制）
 - 管理自己的域名记录（查看、编辑、删除）
-- 管理自己的 API 密钥
-
-### 工作流程
-
-1. **管理员设置**：
-   - 创建 DNS 账号（输入 Cloudflare API Token/Global API Key 或阿里云凭证）
-   - 从 DNS 账号中选择域名添加为可用域名
-
-2. **用户使用**：
-   - 注册账号后查看可用域名
-   - 选择可用域名创建子域名记录
-   - 管理自己的域名记录
-
-详细的数据库初始化指南请查看 [DATABASE_SETUP.md](./DATABASE_SETUP.md)。
+- 管理个人资料（修改姓名、密码）
 
 ## 🎨 界面预览
 
-### 功能页面
+### 用户功能
 - **首页** (`/`) - 自动跳转到登录或仪表板
 - **登录** (`/login`) - 用户登录界面
 - **注册** (`/register`) - 用户注册界面
 - **域名管理** (`/dashboard`) - 域名记录列表和创建
-- **DNS 账号** (`/dashboard/accounts`) - DNS 服务商账号管理
+- **个人资料** (`/dashboard/profile`) - 个人信息和密码管理
 
-### 主要功能流程
-1. 注册账号 → 登录系统
-2. 添加 DNS 账号（配置 Cloudflare 或阿里云凭证）
-3. 创建域名记录（选择 DNS 账号、输入子域名和记录值）
-4. 管理域名（查看、删除）
+### 管理员功能
+- **管理后台** (`/admin`) - 管理员仪表板
+- **用户管理** (`/admin/users`) - 用户账号管理
+- **DNS 账号** (`/admin/dns-accounts`) - DNS 服务商账号管理
+- **可用域名** (`/admin/available-domains`) - 可用域名管理
+- **禁用子域名** (`/admin/blocked-subdomains`) - 子域名黑名单管理
+- **邀请码** (`/admin/invite-codes`) - 邀请码管理
+- **系统设置** (`/admin/settings`) - 系统参数配置
 
-## 📡 API 文档
+## 🚀 部署方式
 
-### 认证
+### 使用预构建镜像（推荐）
 
-#### 注册
-```bash
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "name": "User Name"
-}
-```
-
-#### 登录
-```bash
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-### DNS 账号管理
-
-#### 添加 DNS 账号
-```bash
-POST /api/dns-accounts
-Authorization: Bearer <token>
-Content-Type: application/json
-
-# Cloudflare
-{
-  "providerId": "<cloudflare-provider-id>",
-  "credentials": {
-    "apiToken": "your-cloudflare-api-token"
-  },
-  "isDefault": true
-}
-
-# 阿里云
-{
-  "providerId": "<aliyun-provider-id>",
-  "credentials": {
-    "accessKeyId": "your-access-key-id",
-    "accessKeySecret": "your-access-key-secret"
-  }
-}
-```
-
-#### 查看 DNS 账号列表
-```bash
-GET /api/dns-accounts
-Authorization: Bearer <token>
-```
-
-### 域名管理
-
-#### 创建域名记录
-```bash
-POST /api/domains
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "dnsAccountId": "<dns-account-id>",
-  "subdomain": "test.example.com",
-  "recordType": "A",
-  "value": "1.2.3.4",
-  "ttl": 300
-}
-```
-
-#### 查看域名列表
-```bash
-GET /api/domains
-Authorization: Bearer <token>
-```
-
-#### 更新域名记录
-```bash
-PATCH /api/domains/:id
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "value": "5.6.7.8",
-  "ttl": 600
-}
-```
-
-#### 删除域名记录
-```bash
-DELETE /api/domains/:id
-Authorization: Bearer <token>
-```
-
-## 🔌 DNS Provider 扩展
-
-系统采用适配器模式，添加新的 DNS Provider 非常简单：
-
-### 步骤 1: 创建 Provider 类
-
-在 `packages/dns-providers/src/providers/` 创建新文件，例如 `tencent.ts`：
-
-```typescript
-import { DNSProvider, DNSRecord, DNSProviderCredentials } from '../types';
-
-export class TencentProvider implements DNSProvider {
-  name = 'tencent';
-  private client: any;
-
-  constructor(credentials: DNSProviderCredentials) {
-    // 初始化腾讯云 SDK
-    this.client = new TencentCloudSDK(credentials);
-  }
-
-  async createRecord(domain: string, record: DNSRecord): Promise<DNSRecord> {
-    // 实现创建记录逻辑
-    const result = await this.client.createRecord(/* ... */);
-    return {
-      id: result.recordId,
-      name: record.name,
-      type: record.type,
-      value: record.value,
-      ttl: record.ttl,
-    };
-  }
-
-  async updateRecord(domain: string, recordId: string, record: Partial<DNSRecord>): Promise<DNSRecord> {
-    // 实现更新逻辑
-  }
-
-  async deleteRecord(domain: string, recordId: string): Promise<void> {
-    // 实现删除逻辑
-  }
-
-  async getRecord(domain: string, recordId: string): Promise<DNSRecord> {
-    // 实现获取逻辑
-  }
-
-  async listRecords(domain: string, type?: string): Promise<DNSRecord[]> {
-    // 实现列表逻辑
-  }
-
-  async validateCredentials(): Promise<boolean> {
-    try {
-      await this.client.testConnection();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
-```
-
-### 步骤 2: 注册到工厂
-
-在 `packages/dns-providers/src/factory.ts` 中添加：
-
-```typescript
-import { TencentProvider } from './providers/tencent';
-
-export class DNSProviderFactory {
-  static create(config: DNSProviderConfig): DNSProvider {
-    switch (config.type.toLowerCase()) {
-      case 'cloudflare':
-        return new CloudflareProvider(config.credentials);
-      case 'aliyun':
-        return new AliyunProvider(config.credentials);
-      case 'tencent':  // 新增
-        return new TencentProvider(config.credentials);
-      default:
-        throw new Error(`Unsupported DNS provider: ${config.type}`);
-    }
-  }
-}
-```
-
-### 步骤 3: 添加数据库记录
-
-运行数据库初始化或手动添加：
-
-```sql
-INSERT INTO dns_providers (name, display_name, is_active, config_schema)
-VALUES (
-  'tencent',
-  '腾讯云 DNSPod',
-  true,
-  '{"type":"object","required":["secretId","secretKey"],"properties":{"secretId":{"type":"string"},"secretKey":{"type":"string"}}}'
-);
-```
-
-完成！新的 Provider 即可在前端界面中使用。
-
-## 部署
-
-### 使用 Docker
+Kagerou 提供预构建的 Docker 镜像，无需本地构建：
 
 ```bash
-# 构建
-docker build -t kagerou-api ./apps/api
+# 下载配置文件
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
 
-# 运行
-docker run -p 3001:3001 --env-file .env kagerou-api
+# 配置环境变量
+cp .env.docker .env
+# 编辑 .env 文件修改密钥
+
+# 启动服务
+docker-compose pull
+docker-compose up -d
 ```
 
-### 云平台部署
+**预构建镜像优势：**
+- 🚀 无需本地构建，启动更快
+- 🎯 经过测试的稳定版本
+- � 自动更新到最新版本
+- 🔧 统一的生产环境
 
-- **Railway**: 直接连接 GitHub 仓库
-- **Render**: 支持 Monorepo 部署
-- **Vercel**: 适合 Serverless 部署
+**可用镜像：**
+- `ghcr.io/your-username/kagerou:latest` - 最新稳定版
+- `ghcr.io/your-username/kagerou:v1.0.0` - 特定版本
 
-## 🔧 开发命令
+### 版本管理
 
 ```bash
-# 开发
-npm run dev          # 启动所有开发服务器（前端 + 后端）
-npm run build        # 构建所有包
+# 使用特定版本
+docker-compose pull
+docker-compose up -d
 
-# 数据库（推荐使用 db:setup 一键初始化）
-npm run db:setup     # 一键初始化数据库（generate + migrate + seed）
-npm run db:env       # 同步环境变量到 Prisma
-npm run db:generate  # 生成 Prisma Client（自动同步环境变量和安装依赖）
-npm run db:migrate   # 运行数据库迁移（自动同步环境变量）
-npm run db:studio    # 打开 Prisma Studio（可视化数据库管理）
-npm run db:seed      # 初始化 DNS Provider 数据（使用 Node.js 脚本）
+# 更新到最新版本
+docker-compose pull
+docker-compose up -d
+```
 
-# 单独启动
-cd apps/api && npm run dev    # 仅启动后端
-cd apps/web && npm run dev    # 仅启动前端
+详细配置请查看 [DOCKER.md](./DOCKER.md) 和 [GITHUB_ACTIONS.md](./GITHUB_ACTIONS.md)。
+
+## 🔧 管理命令
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 停止服务
+docker-compose down
+
+# 更新到最新版本
+docker-compose pull
+docker-compose up -d
+```
+
+### 应用管理
+
+```bash
+# 进入应用容器
+docker-compose exec app sh
+
+# 查看应用进程状态
+docker-compose exec app su kagerou -c "pm2 status"
+
+# 重启应用进程
+docker-compose exec app su kagerou -c "pm2 restart all"
+```
+
+### 数据库管理
+
+```bash
+# 连接数据库
+docker-compose exec postgres psql -U kagerou -d kagerou
+
+# 备份数据库
+docker-compose exec postgres pg_dump -U kagerou kagerou > backup.sql
+
+# 恢复数据库
+docker-compose exec -T postgres psql -U kagerou kagerou < backup.sql
 ```
 
 ## 🔐 安全说明
@@ -450,6 +267,7 @@ cd apps/web && npm run dev    # 仅启动前端
 4. 配置 CORS 白名单
 5. 添加 API 限流
 6. 定期备份数据库
+7. 使用预构建镜像进行部署
 
 ## 🚀 生产部署
 
@@ -460,11 +278,6 @@ cd apps/web && npm run dev    # 仅启动前端
 ```bash
 # 数据库
 DATABASE_URL="postgresql://user:password@host:5432/dbname"
-
-# Redis (with authentication)
-REDIS_URL="redis://:your_redis_password@host:6379/0"
-REDIS_PASSWORD="your_redis_password"
-REDIS_DB="0"
 
 # 安全密钥（必须修改！）
 JWT_SECRET="your-production-jwt-secret-min-32-chars-random-string"
@@ -489,31 +302,18 @@ NODE_ENV="production"
 ### Docker 部署
 
 ```bash
-# 构建后端镜像
-docker build -t kagerou-api -f apps/api/Dockerfile .
+# 下载配置文件
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
 
-# 运行
-docker run -d \
-  -p 3001:3001 \
-  --env-file .env \
-  --name kagerou-api \
-  kagerou-api
+# 配置环境变量
+cp .env.docker .env
+# 编辑 .env 文件，修改生产环境密钥
+
+# 启动服务
+docker-compose pull
+docker-compose up -d
 ```
-
-### 云平台部署
-
-#### Vercel (前端)
-1. 连接 GitHub 仓库
-2. 设置 Root Directory: `apps/web`
-3. 配置环境变量: `NEXT_PUBLIC_API_URL`
-4. 部署
-
-#### Railway (后端 + 数据库)
-1. 连接 GitHub 仓库
-2. 添加 PostgreSQL 和 Redis 服务
-3. 配置环境变量
-4. 设置 Root Directory: `apps/api`
-5. 部署
 
 ## 📝 常见问题
 
@@ -526,23 +326,56 @@ docker-compose ps
 docker-compose logs postgres
 ```
 
-### 2. Prisma 迁移失败
+### 2. 数据库初始化失败
 ```bash
-# 重置数据库（会删除所有数据）
-cd packages/database
-npx prisma migrate reset
+# 进入应用容器
+docker-compose exec app sh
 
-# 重新迁移
-npx prisma migrate dev
+# 重新初始化数据库
+su kagerou -c "cd /app/packages/database && npx prisma db push"
+su kagerou -c "cd /app && node scripts/init-database.js"
 ```
 
 ### 3. 前端无法连接后端
-检查 `apps/web/.env` 中的 `NEXT_PUBLIC_API_URL` 是否正确。
+检查 `.env` 中的 `NEXT_PUBLIC_API_URL` 是否正确。
 
 ### 4. DNS 记录创建失败
 - 检查 DNS 账号凭证是否正确
 - 确认域名已在 DNS 服务商处添加
 - 查看后端日志获取详细错误信息
+
+## 🚀 CI/CD 和镜像发布
+
+项目使用 GitHub Actions 自动构建和发布 Docker 镜像：
+
+### 自动化工作流
+- **测试**: 每次推送和 PR 时运行测试
+- **构建**: 自动构建并推送 Docker 镜像到 GHCR
+- **发布**: 推送版本标签时创建 GitHub Release
+
+### 发布新版本
+```bash
+# 创建版本标签
+git tag v1.0.0
+git push origin v1.0.0
+
+# GitHub Actions 会自动：
+# 1. 构建 Docker 镜像
+# 2. 推送到 GitHub Container Registry
+# 3. 创建 GitHub Release
+# 4. 上传部署文件
+```
+
+### 使用预构建镜像
+```bash
+# 拉取最新镜像
+docker pull ghcr.io/your-username/kagerou:latest
+
+# 使用脚本快速部署
+docker-compose pull && docker-compose up -d
+```
+
+详细的 CI/CD 配置请查看 [GITHUB_ACTIONS.md](./GITHUB_ACTIONS.md)。
 
 ## 🤝 贡献
 

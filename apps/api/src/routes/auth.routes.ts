@@ -2,14 +2,16 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { AuthService } from '../services/auth.service';
-import { rateLimiter } from '../utils/redis';
+import { rateLimiter, getRateLimitConfig } from '../utils/memory-limiter';
 import { config } from '../config';
 import { requireAuth } from '../middleware/admin.middleware';
+import { prisma } from '@kagerou/database';
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().optional(),
+  inviteCode: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -29,10 +31,11 @@ export async function authRoutes(app: FastifyInstance) {
   // 注册限流中间件
   const registerRateLimit = async (request: FastifyRequest, reply: FastifyReply) => {
     const key = `rate_limit:register:${request.ip}`;
-    const allowed = await rateLimiter.check(key, 5, 3600); // 每小时最多 5 次
+    const config = await getRateLimitConfig();
+    const allowed = await rateLimiter.check(key, config.registerLimit, 3600); // 每小时限制
     
     if (!allowed) {
-      const remaining = await rateLimiter.remaining(key, 5);
+      const remaining = await rateLimiter.remaining(key, config.registerLimit);
       reply.code(429).send({
         error: 'Too Many Requests',
         message: 'Registration rate limit exceeded. Try again later.',
@@ -44,10 +47,11 @@ export async function authRoutes(app: FastifyInstance) {
 
   const loginRateLimit = async (request: FastifyRequest, reply: FastifyReply) => {
     const key = `rate_limit:login:${request.ip}`;
-    const allowed = await rateLimiter.check(key, 10, 300); // 5 分钟最多 10 次
+    const config = await getRateLimitConfig();
+    const allowed = await rateLimiter.check(key, config.loginLimit, 3600); // 每小时限制
     
     if (!allowed) {
-      const remaining = await rateLimiter.remaining(key, 10);
+      const remaining = await rateLimiter.remaining(key, config.loginLimit);
       reply.code(429).send({
         error: 'Too Many Requests',
         message: 'Login rate limit exceeded. Try again later.',
@@ -62,13 +66,32 @@ export async function authRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const body = registerSchema.parse(request.body);
-      const user = await authService.register(body.email, body.password, body.name);
+      const user = await authService.register(body.email, body.password, body.name, 'user', body.inviteCode);
       
       const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: '7d' });
       
       return { user, token };
     } catch (error: any) {
       reply.code(400).send({ error: error.message });
+    }
+  });
+
+  // 获取注册设置
+  app.get('/registration-settings', async (request, reply) => {
+    try {
+      const [allowRegistration, requireInviteCode, userCount] = await Promise.all([
+        prisma.systemSetting.findUnique({ where: { key: 'allow_registration' } }),
+        prisma.systemSetting.findUnique({ where: { key: 'require_invite_code' } }),
+        prisma.user.count()
+      ]);
+
+      return {
+        allowRegistration: allowRegistration?.value === 'true',
+        requireInviteCode: requireInviteCode?.value === 'true',
+        isFirstUser: userCount === 0
+      };
+    } catch (error: any) {
+      reply.code(500).send({ error: error.message });
     }
   });
 
@@ -93,6 +116,35 @@ export async function authRoutes(app: FastifyInstance) {
     const authService = new AuthService();
     const user = await authService.getUserById((request as any).user.id);
     return { user };
+  });
+
+  // 更新个人信息
+  app.put('/profile', {
+    onRequest: [requireAuth],
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 6 }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const authService = new AuthService();
+      const { name, email, password } = request.body as {
+        name?: string;
+        email?: string;
+        password?: string;
+      };
+      
+      const user = await authService.updateProfile((request as any).user.id, { name, email, password });
+      return { user };
+    } catch (error: any) {
+      reply.code(400).send({ error: error.message });
+    }
   });
 
   // 创建第一个管理员账号（仅在没有管理员时可用）

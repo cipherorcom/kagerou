@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.get_version.outputs.tag_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag_name }}
+          release_name: Kagerou ${{ steps.get_version.outputs.tag_name }}
+          body: |
+            ## 🚀 Kagerou ${{ steps.get_version.outputs.tag_name }}
+
+            ### Docker 镜像
+            
+            本次发布的 Docker 镜像：
+            
+            - **完整应用**: `ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.version }}`
+
+            ### 快速部署
+
+            ```bash
+            # 下载 docker-compose 文件
+            curl -O https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.get_version.outputs.tag_name }}/docker-compose.yml
+            
+            # 配置环境变量
+            curl -O https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.get_version.outputs.tag_name }}/.env.docker
+            mv .env.docker .env
+            # 编辑 .env 文件
+            
+            # 启动服务
+            docker-compose up -d
+            ```
+
+            ### 使用发布镜像
+
+            ```yaml
+            # docker-compose.yml 已经配置使用发布镜像
+            services:
+              app:
+                image: ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.version }}
+                # ... 其他配置
+            ```
+
+            ### 更新日志
+            
+            请查看提交历史了解详细更改。
+
+          draft: false
+          prerelease: false
+
+  build-release-image:
+    runs-on: ubuntu-latest
+    needs: create-release
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  create-docker-compose-release:
+    runs-on: ubuntu-latest
+    needs: [create-release, build-release-image]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload docker-compose.yml
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./docker-compose.yml
+          asset_name: docker-compose.yml
+          asset_content_type: text/yaml
+
+      - name: Upload .env.docker
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./.env.docker
+          asset_name: .env.docker
+          asset_content_type: text/plain
+
+      - name: Upload DOCKER.md
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./DOCKER.md
+          asset_name: DOCKER.md
+          asset_content_type: text/markdown

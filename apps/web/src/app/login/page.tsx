@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Logo } from '@/components/logo'
 import Link from 'next/link'
 
 const loginSchema = z.object({
@@ -22,10 +23,26 @@ export default function LoginPage() {
   const setAuth = useAuthStore((state) => state.setAuth)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [allowRegistration, setAllowRegistration] = useState(true)
+  const [isFirstUser, setIsFirstUser] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
+
+  useEffect(() => {
+    loadRegistrationSettings()
+  }, [])
+
+  const loadRegistrationSettings = async () => {
+    try {
+      const response = await authApi.getRegistrationSettings()
+      setAllowRegistration(response.data.allowRegistration)
+      setIsFirstUser(response.data.isFirstUser)
+    } catch (err) {
+      console.error('Failed to load registration settings:', err)
+    }
+  }
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true)
@@ -58,18 +75,22 @@ export default function LoginPage() {
         
         <div>
           <div className="text-center mb-6">
-            <Link href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700">
-              Kagerou
-            </Link>
+            <Logo size="lg" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             登录账号
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            或{' '}
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              注册新账号
-            </Link>
+            {(allowRegistration || isFirstUser) ? (
+              <>
+                或{' '}
+                <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                  {isFirstUser ? '创建管理员账号' : '注册新账号'}
+                </Link>
+              </>
+            ) : (
+              '请使用现有账号登录'
+            )}
           </p>
         </div>
         
@@ -116,6 +137,21 @@ export default function LoginPage() {
               {loading ? '登录中...' : '登录'}
             </button>
           </div>
+
+          {/* 注册跳转链接 */}
+          {(allowRegistration || isFirstUser) && (
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                还没有账号？
+                <Link
+                  href="/register"
+                  className="ml-1 font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  {isFirstUser ? '创建管理员账号' : '立即注册'}
+                </Link>
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -20,6 +20,7 @@ model User {
   
   domains       Domain[]
   apiKeys       ApiKey[]
+  inviteCodes   InviteCode[]
   
   @@map("users")
 }
@@ -28,14 +29,11 @@ model DNSProvider {
   id            String         @id @default(cuid())
   name          String         @unique // cloudflare, aliyun, aws
   displayName   String
-  credentials   String         // 加密存储的凭证
   isActive      Boolean        @default(true)
   configSchema  Json           // 配置字段的 JSON Schema
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
   
-  availableDomains AvailableDomain[]
-  domains       Domain[]
+  dnsAccounts   DNSAccount[]
   
   @@map("dns_providers")
 }
@@ -81,7 +79,7 @@ model Domain {
   recordType        String       @default("A") // A, AAAA, CNAME
   value             String
   providerRecordId  String?      // DNS 服务商返回的记录 ID
-  status            String       @default("active") // active, pending, failed, deleted
+  status            String       @default("active") // active, pending, rejected
   ttl               Int          @default(300)
   proxied           Boolean      @default(false) // 是否启用代理（仅 Cloudflare 支持）
   createdAt         DateTime     @default(now())
@@ -124,4 +122,42 @@ model ApiLog {
   @@index([userId])
   @@index([createdAt])
   @@map("api_logs")
+}
+
+model BlockedSubdomain {
+  id            String         @id @default(cuid())
+  subdomain     String         @unique // 被禁用的子域名，如 "admin", "api", "www"
+  reason        String?        // 禁用原因
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@map("blocked_subdomains")
+}
+
+model SystemSetting {
+  id            String         @id @default(cuid())
+  key           String         @unique // 设置键名
+  value         String         // 设置值
+  description   String?        // 设置描述
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@map("system_settings")
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  description String?
+  maxUses     Int       @default(1)
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdBy   String
+  creator     User      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("invite_codes")
 }

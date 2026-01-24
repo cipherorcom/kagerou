@@ -25,6 +25,7 @@ type UpdateDomainForm = z.infer<typeof updateDomainSchema>
 
 export default function DashboardPage() {
   const queryClient = useQueryClient()
+  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingDomain, setEditingDomain] = useState<any>(null)
 
@@ -50,6 +51,16 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['domains'] })
       setShowForm(false)
       reset()
+      setError('')
+    },
+    onError: (error: any) => {
+      console.error('创建域名失败:', error)
+      // 优先显示API返回的具体错误信息
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          '创建域名失败，请重试'
+      setError(errorMessage)
     },
   })
 
@@ -59,6 +70,16 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['domains'] })
       setEditingDomain(null)
       resetUpdate()
+      setError('')
+    },
+    onError: (error: any) => {
+      console.error('更新域名失败:', error)
+      // 优先显示API返回的具体错误信息
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          '更新域名失败，请重试'
+      setError(errorMessage)
     },
   })
 
@@ -66,6 +87,16 @@ export default function DashboardPage() {
     mutationFn: domainApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['domains'] })
+      setError('')
+    },
+    onError: (error: any) => {
+      console.error('删除域名失败:', error)
+      // 优先显示API返回的具体错误信息
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          '删除域名失败，请重试'
+      setError(errorMessage)
     },
   })
 
@@ -138,10 +169,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 主容器 - 统一的卡片 */}
-        <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen">
+      {/* 我的域名卡片 */}
+      <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
           {/* Header */}
           <div className="px-8 py-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
             <div className="flex justify-between items-center">
@@ -177,19 +207,39 @@ export default function DashboardPage() {
           {showForm && (
             <div className="border-b border-gray-200 dark:border-gray-600">
               <div className="px-8 py-6 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-gray-700/30 dark:to-gray-600/30">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">添加新域名</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        创建一个新的子域名记录，支持多种记录类型
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">添加新域名</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      创建一个新的子域名记录，支持多种记录类型
-                    </p>
-                  </div>
-                </div>
+
+                  {/* 错误提示 */}
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                        <button
+                          onClick={() => setError('')}
+                          className="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                   {/* 域名选择 */}
@@ -407,6 +457,26 @@ export default function DashboardPage() {
           {/* 域名列表或空状态 */}
           {domains && domains.length > 0 ? (
             <>
+              {/* 错误提示 */}
+              {error && (
+                <div className="mx-8 mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                    <button
+                      onClick={() => setError('')}
+                      className="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 域名列表内容 */}
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {domains.map((domain: any) => (
@@ -442,13 +512,20 @@ export default function DashboardPage() {
                               <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${
                                 domain.status === 'active' 
                                   ? 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-800 dark:text-green-200' 
-                                  : 'bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/50 dark:to-orange-900/50 text-yellow-800 dark:text-yellow-200'
+                                  : domain.status === 'pending'
+                                  ? 'bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/50 dark:to-orange-900/50 text-yellow-800 dark:text-yellow-200'
+                                  : 'bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900/50 dark:to-pink-900/50 text-red-800 dark:text-red-200'
                               }`}>
                                 <div className={`w-2 h-2 rounded-full mr-1.5 ${
-                                  domain.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
+                                  domain.status === 'active' ? 'bg-green-500' : domain.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
                                 }`}></div>
-                                {domain.status === 'active' ? '正常' : domain.status}
+                                {domain.status === 'active' ? '正常' : domain.status === 'pending' ? '待处理' : '拒绝'}
                               </span>
+                              {domain.status !== 'active' && (
+                                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                  {domain.status === 'pending' ? '等待管理员审核，暂时无法编辑' : '域名已被拒绝，无法编辑'}
+                                </div>
+                              )}
                             </div>
                             <div className="space-y-2">
                               <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
@@ -478,15 +555,17 @@ export default function DashboardPage() {
                       </div>
                       
                       <div className="flex items-center space-x-3 ml-6">
-                        <button
-                          onClick={() => startEdit(domain)}
-                          className="group relative inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 text-sm font-medium rounded-xl text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          编辑
-                        </button>
+                        {domain.status === 'active' && (
+                          <button
+                            onClick={() => startEdit(domain)}
+                            className="group relative inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-600 text-sm font-medium rounded-xl text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            编辑
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             if (confirm(`确定要删除域名 ${domain.subdomain}.${domain.availableDomain.domain} 吗？此操作不可恢复。`)) {
@@ -509,7 +588,7 @@ export default function DashboardPage() {
                     </div>
                     
                     {/* 编辑表单 */}
-                    {editingDomain?.id === domain.id && (
+                    {editingDomain?.id === domain.id && domain.status === 'active' && (
                       <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-lg">
                         <div className="flex items-center space-x-3 mb-4">
                           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -635,7 +714,6 @@ export default function DashboardPage() {
             </div>
           ) : null}
         </div>
-      </div>
     </div>
   )
 }

@@ -1,35 +1,52 @@
-version: '3.8'
+# Kagerou 生产环境配置
+# 单镜像架构：API + Web + Nginx 全部打包在一个容器中
 
 services:
+  # 数据库服务
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: kagerou
-      POSTGRES_PASSWORD: kagerou123
-      POSTGRES_DB: kagerou
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-kagerou}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kagerou123}
+      POSTGRES_DB: ${POSTGRES_DB:-kagerou}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kagerou"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kagerou}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - kagerou-network
+    restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    command: redis-server --requirepass redis_password_123
+  # 应用服务（使用预构建镜像）
+  app:
+    image: ghcr.io/cipherorcom/kagerou:latest
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+      - "${APP_PORT:-80}:80"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-kagerou}:${POSTGRES_PASSWORD:-kagerou123}@postgres:5432/${POSTGRES_DB:-kagerou}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost/api}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kagerou-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:
-  redis_data:
+
+networks:
+  kagerou-network:
+    driver: bridge

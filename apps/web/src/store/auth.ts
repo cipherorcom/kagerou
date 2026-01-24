@@ -6,6 +6,7 @@ interface User {
   name?: string
   role: string
   quota: number
+  createdAt?: string
 }
 
 interface AuthState {
