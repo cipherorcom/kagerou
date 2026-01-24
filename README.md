@@ -78,6 +78,36 @@ docker-compose pull
 docker-compose up -d
 ```
 
+**如果遇到 Docker Hub 认证问题：**
+
+Docker Hub 现在对匿名拉取有限制，如果看到 "UNAUTHORIZED" 错误，可以：
+
+**方案 1: 登录 Docker Hub**
+```bash
+docker login
+# 输入你的 Docker Hub 用户名和密码
+docker-compose pull
+docker-compose up -d
+```
+
+**方案 2: 使用镜像源（推荐）**
+```bash
+# 下载镜像源配置
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.mirror.yml
+
+# 使用镜像源构建
+docker-compose -f docker-compose.mirror.yml up --build -d
+```
+
+**方案 3: 本地构建**
+```bash
+# 下载本地构建配置
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.build.yml
+
+# 本地构建并启动
+docker-compose -f docker-compose.build.yml up --build -d
+```
+
 ### 4. 访问应用
 
 - 🌐 **网站**: http://localhost
@@ -88,7 +118,8 @@ docker-compose up -d
 访问 `http://localhost/create-admin` 创建第一个管理员账号。
 
 **注意**: 
-- 使用的是预构建镜像 `ghcr.io/your-username/kagerou:latest`
+- 优先使用预构建镜像 `ghcr.io/your-username/kagerou:latest`
+- 如果网络问题无法拉取镜像，使用本地构建版本
 - 首次启动会自动处理数据库初始化
 - 生产环境请务必修改 `.env` 中的默认密钥
 
@@ -332,8 +363,8 @@ docker-compose logs postgres
 docker-compose exec app sh
 
 # 重新初始化数据库
-su kagerou -c "cd /app/packages/database && npx prisma db push"
-su kagerou -c "cd /app && node scripts/init-database.js"
+cd /app/packages/database && npx prisma db push
+cd /app && node scripts/init-database.js
 ```
 
 ### 3. 前端无法连接后端
@@ -343,6 +374,42 @@ su kagerou -c "cd /app && node scripts/init-database.js"
 - 检查 DNS 账号凭证是否正确
 - 确认域名已在 DNS 服务商处添加
 - 查看后端日志获取详细错误信息
+
+### 5. 无法拉取 Docker 镜像 / Docker Hub 认证问题
+
+如果遇到 "UNAUTHORIZED" 或 "authentication required" 错误：
+
+**方案 1: 登录 Docker Hub**
+```bash
+docker login
+# 输入你的 Docker Hub 用户名和密码
+docker-compose pull && docker-compose up -d
+```
+
+**方案 2: 使用镜像源（推荐，无需登录）**
+```bash
+# 使用阿里云镜像源
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.mirror.yml
+docker-compose -f docker-compose.mirror.yml up --build -d
+```
+
+**方案 3: 本地构建**
+```bash
+# 使用本地构建版本
+curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.build.yml
+docker-compose -f docker-compose.build.yml up --build -d
+```
+
+### 6. 本地构建失败
+如果本地构建遇到问题：
+
+```bash
+# 清理 Docker 缓存
+docker system prune -a
+
+# 重新构建
+docker-compose -f docker-compose.build.yml build --no-cache
+```
 
 ## 🚀 CI/CD 和镜像发布
 

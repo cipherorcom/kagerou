@@ -8,14 +8,15 @@ RUN apk add --no-cache libc6-compat
 FROM base AS api-builder
 WORKDIR /app
 
-# 复制 package 文件
+# 复制所有 package.json 文件
 COPY package*.json ./
+COPY turbo.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY packages/database/package*.json ./packages/database/
 COPY packages/dns-providers/package*.json ./packages/dns-providers/
 
-# 安装依赖
-RUN npm ci --only=production
+# 安装所有依赖（包括开发依赖，构建需要）
+RUN npm ci
 
 # 复制源代码
 COPY . .
@@ -23,31 +24,32 @@ COPY . .
 # 生成 Prisma Client
 RUN cd packages/database && npx prisma generate
 
-# 构建 API
-RUN cd apps/api && npm run build
+# 使用 turbo 构建 API（会自动处理依赖）
+RUN npx turbo build --filter=@kagerou/api
 
 # 构建阶段 - Web
 FROM base AS web-builder
 WORKDIR /app
 
-# 复制 package 文件
+# 复制所有 package.json 文件
 COPY package*.json ./
+COPY turbo.json ./
 COPY apps/web/package*.json ./apps/web/
 
-# 安装依赖
-RUN npm ci --only=production
+# 安装所有依赖（包括开发依赖，构建需要）
+RUN npm ci
 
 # 复制源代码
 COPY . .
 
-# 构建 Web 应用
-RUN cd apps/web && npm run build
+# 使用 turbo 构建 Web（会自动处理依赖）
+RUN npx turbo build --filter=@kagerou/web
 
 # 生产阶段 - 合并镜像
-FROM nginx:alpine AS production
+FROM node:18-alpine AS production
 
-# 安装 Node.js 和 PM2
-RUN apk add --no-cache nodejs npm
+# 安装 Nginx 和 PM2
+RUN apk add --no-cache nginx curl
 RUN npm install -g pm2
 
 # 创建应用用户
@@ -218,7 +220,8 @@ COPY --chown=root:root <<EOF /docker-entrypoint.sh
 #!/bin/sh
 set -e
 
-# 创建日志目录
+# 创建 Nginx 运行目录
+mkdir -p /run/nginx
 mkdir -p /var/log/pm2
 chown -R kagerou:kagerou /var/log/pm2
 
