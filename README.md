@@ -42,10 +42,10 @@ Kagerou 提供预构建的 Docker 镜像，部署极其简单：
 
 ```bash
 # 下载 docker-compose.yml
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.yml
 
 # 下载环境变量模板
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/.env.docker
 ```
 
 ### 2. 配置环境变量
@@ -93,7 +93,7 @@ docker-compose up -d
 **方案 2: 使用镜像源（推荐）**
 ```bash
 # 下载镜像源配置
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.mirror.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.mirror.yml
 
 # 使用镜像源构建
 docker-compose -f docker-compose.mirror.yml up --build -d
@@ -102,7 +102,7 @@ docker-compose -f docker-compose.mirror.yml up --build -d
 **方案 3: 本地构建**
 ```bash
 # 下载本地构建配置
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.build.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.build.yml
 
 # 本地构建并启动
 docker-compose -f docker-compose.build.yml up --build -d
@@ -118,7 +118,7 @@ docker-compose -f docker-compose.build.yml up --build -d
 访问 `http://localhost/create-admin` 创建第一个管理员账号。
 
 **注意**: 
-- 优先使用预构建镜像 `ghcr.io/your-username/kagerou:latest`
+- 优先使用预构建镜像 `ghcr.io/cipherorcom/kagerou:latest`
 - 如果网络问题无法拉取镜像，使用本地构建版本
 - 首次启动会自动处理数据库初始化
 - 生产环境请务必修改 `.env` 中的默认密钥
@@ -202,8 +202,8 @@ Kagerou 提供预构建的 Docker 镜像，无需本地构建：
 
 ```bash
 # 下载配置文件
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/.env.docker
 
 # 配置环境变量
 cp .env.docker .env
@@ -221,8 +221,8 @@ docker-compose up -d
 - 🔧 统一的生产环境
 
 **可用镜像：**
-- `ghcr.io/your-username/kagerou:latest` - 最新稳定版
-- `ghcr.io/your-username/kagerou:v1.0.0` - 特定版本
+- `ghcr.io/cipherorcom/kagerou:latest` - 最新稳定版
+- `ghcr.io/cipherorcom/kagerou:v1.0.0` - 特定版本
 
 ### 版本管理
 
@@ -334,8 +334,8 @@ NODE_ENV="production"
 
 ```bash
 # 下载配置文件
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.yml
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/.env.docker
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/.env.docker
 
 # 配置环境变量
 cp .env.docker .env
@@ -389,14 +389,14 @@ docker-compose pull && docker-compose up -d
 **方案 2: 使用镜像源（推荐，无需登录）**
 ```bash
 # 使用阿里云镜像源
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.mirror.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.mirror.yml
 docker-compose -f docker-compose.mirror.yml up --build -d
 ```
 
 **方案 3: 本地构建**
 ```bash
 # 使用本地构建版本
-curl -O https://raw.githubusercontent.com/your-username/kagerou/main/docker-compose.build.yml
+curl -O https://raw.githubusercontent.com/cipherorcom/kagerou/main/docker-compose.build.yml
 docker-compose -f docker-compose.build.yml up --build -d
 ```
 
@@ -436,7 +436,7 @@ git push origin v1.0.0
 ### 使用预构建镜像
 ```bash
 # 拉取最新镜像
-docker pull ghcr.io/your-username/kagerou:latest
+docker pull ghcr.io/cipherorcom/kagerou:latest
 
 # 使用脚本快速部署
 docker-compose pull && docker-compose up -d
